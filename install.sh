@@ -55,6 +55,7 @@ fi;
 
 # Turn on tftp in xinetd and restart the xinetd service
 sed -ie "$(grep -n disable /etc/xinetd.d/tftp|awk -F: '{print $1}')s/yes/no/g" /etc/xinetd.d/tftp;
+sed -ie "$(grep -n server_args /etc/xinetd.d/tftp|awk -F: '{print $1}')s|/var/lib/tftpboot/$tftp_dir/g" /etc/xinetd.d/tftp;
 service xinetd restart;
 
 # Add a default menu 
