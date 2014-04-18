@@ -31,7 +31,7 @@ mkdir -v $tftp_dir\pxelinux.cfg;
 while true; do
   read -p "Do you want a copy of Centos 6.5? [y/n]" input;
   case $input in
-    [Yy]* ) centos=1; cd /tftp/images/centos; wget http://mirror.rackspace.com/CentOS/6.5/isos/x86_64/CentOS-6.5-x86_64-minimal.iso; mkdir /tmp/mount; mount -o loop $tftp_dir\images/centos/CentOS-6.5-x86_64-minimal.iso /tmp/mount; cp -v /tmp/mount/images/{vmlinuz,initrd.img} $tftp_dir\images/centos/; echo "Centos Installed"; break;; # We will add sanity checking to ensure everything downloaded correctly in the future. 
+    [Yy]* ) centos=1; cd $tftp_dir\images/centos; if [ ! -f $tftp_dir\images/centos/CentOS-6.5-x86_64-minimal.iso ]; then wget http://mirror.rackspace.com/CentOS/6.5/isos/x86_64/CentOS-6.5-x86_64-minimal.iso; fi; mkdir /tmp/mount; mount -o loop $tftp_dir\images/centos/CentOS-6.5-x86_64-minimal.iso /tmp/mount; cp -v /tmp/mount/images/pxeboot/{vmlinuz,initrd.img} $tftp_dir\images/centos/; echo "Centos Installed"; break;; # We will add sanity checking to ensure everything downloaded correctly in the future. 
     [Nn]* ) exit;;
     * ) echo "Please enter either y or n";;
 esac;
