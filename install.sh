@@ -38,24 +38,82 @@ esac;
 done;   
 
 # Copy over the sample dhcpd conf, backup the current one first.
+echo "Setting up dhcpd... ";
+read -p "What is your network address (ex: 192.168.0.0): " dhcp;
+read -p "What is your network mask (ex: 255.255.255.0): " netmask;
+read -p "What is your gateway (ex: 192.168.0.1): " gateway;
+read -p "What is your domain name (ex: myhouse.com): " domain;
+read -p "Please enter your IP range (ex: 192.168.1.1 192.168.1.100): " range;
+# should we add nameservers?
+
+
+# If we got any blank responses back
+if [ -z $dhcp ];
+  then dhcp=192.168.1.1;
+fi;
+
+if [ -z $netmask ];
+  then netmask=255.255.255.0;
+fi; 
+
+if [ -z $gateway ];
+  then gateway=192.168.1.1;
+fi; 
+
+if [ -z $domain ];
+  then domain="domain.com";
+fi; 
+
+if [ -z $range ];
+  then range="192.168.1.100 192.168.1.200";
+fi;
+
+# Backup any existing dhcpd configurations
 if [ -f /etc/dhcp/dhcpd.conf ]; 
   then mv /etc/dhcp/dhcpd.conf{,.backup};
 fi;
 
-cp /usr/share/doc/dhcp*/dhcpd.conf.sample /etc/dhcp/dhcpd.conf
+# The example takes a lot of configuration, but if you need more control over DHCP use
+# cp /usr/share/doc/dhcp*/dhcpd.conf.sample /etc/dhcp/dhcpd.conf
+# then configure as you wish.
+
+# This is the most simplistic setup for DHCP. 
+# Should work fine with existing networks, as dhcp will not lease out a used ip
+# Report bugs at https://github.com/RyanHartje/pxe4Centos/issues
+
+cat > /etc/dhcp/dhcpd.conf << "EOF"
+ddns-update-style interim;
+ignore client-updates;
+ddns-domainname "$domain.";
+ddns-rev-domainname "in-addr.arpa.";
+allow booting;
+allow bootp;
+
+subnet 10.1.3.0 netmask 255.255.255.0 {
+        option domain-name              "$domain";
+        option routers                  $gateway;
+        option subnet-mask              $netmask;
+        option domain-name-servers      8.8.8.8,8.8.4.4;
+        range dynamic-bootp             $range;
+        default-lease-time              10800;
+        max-lease-time                  10800;
+      next-server ;
+      filename "pxelinux.0";
+}
+EOF
 
 # Set up PXE directives in dhcpd.conf 
-if [ -z $(grep -i "allow booting" /etc/dhcp/dhcpd.conf) ]; 
-  then echo "allow booting" >> /etc/dhcp/dhcpd.conf; 
-fi; 
-
-if [ -z $(grep -i "allow bootp" /etc/dhcp/dhcpd.conf) ]; 
-  then echo "allow bootp" >> /etc/dhcp/dhcpd.conf; 
-fi; 
+#if [ -z $(grep -i "allow booting" /etc/dhcp/dhcpd.conf) ]; 
+#  then echo "allow booting" >> /etc/dhcp/dhcpd.conf; 
+#fi; 
+#
+#if [ -z $(grep -i "allow bootp" /etc/dhcp/dhcpd.conf) ]; 
+#  then echo "allow bootp" >> /etc/dhcp/dhcpd.conf; 
+#fi; 
 
 # Turn on tftp in xinetd and restart the xinetd service
 sed -ie "$(grep -n disable /etc/xinetd.d/tftp|awk -F: '{print $1}')s/yes/no/g" /etc/xinetd.d/tftp;
-sed -ie "$(grep -n server_args /etc/xinetd.d/tftp|awk -F: '{print $1}')s|/var/lib/tftpboot/$tftp_dir/g" /etc/xinetd.d/tftp;
+sed -ie "$(grep -n server_args /etc/xinetd.d/tftp|awk -F: '{print $1}')s|/var/lib/tftpboot|$tftp_dir|g" /etc/xinetd.d/tftp;
 service xinetd restart;
 
 # Add a default menu 
@@ -74,6 +132,14 @@ LABEL Centos 6.5 x86_64
   KERNEL images/centos/vmlinuz
   APPEND initrd=images/centos/initrd.img #ks=http://$my_ip/kickstart.cfg
 EOF
+
+# Be sure to open the firewall where necessary
+iptables -I INPUT -p udp --dport 69 -j ACCEPT
+service iptables save;
+
+# Setup chkconfig so that our services stay on
+chkconfig xinetd on;
+chkconfig dhcpd on;
 
 # Setup the default kickstart to automate installs (later)
 
