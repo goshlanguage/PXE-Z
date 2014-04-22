@@ -7,7 +7,7 @@ yum install -y syslinux xinetd dhcp tftp-server;
 # Set these variables if you wish to change where your files reside (untested)
 # Please be sure to place your web root here
 webroot="/usr/share/nginx/html/";
-tftp_dir="/tftp/";
+tftp_dir="/var/lib/tftpboot/";
 centos_dir="$tftp_dir/images/centos";
 ubuntu_dir="$tftp_dir/images/ubuntu";
 debian_dir="$tftp_dir/images/debian";
@@ -32,10 +32,12 @@ while true; do
   read -p "Do you want a copy of Centos 6.5? [y/n]" input;
   case $input in
     [Yy]* ) centos=1; cd $tftp_dir\images/centos; if [ ! -f $tftp_dir\images/centos/CentOS-6.5-x86_64-minimal.iso ]; then wget http://mirror.rackspace.com/CentOS/6.5/isos/x86_64/CentOS-6.5-x86_64-minimal.iso; fi; mkdir /tmp/mount; mount -o loop $tftp_dir\images/centos/CentOS-6.5-x86_64-minimal.iso /tmp/mount; cp -v /tmp/mount/images/pxeboot/{vmlinuz,initrd.img} $tftp_dir\images/centos/; echo "Centos Installed"; break;; # We will add sanity checking to ensure everything downloaded correctly in the future. 
-    [Nn]* ) exit;;
+    [Nn]* ) break;;
     * ) echo "Please enter either y or n";;
 esac;
 done;   
+
+my_ip=$(ifconfig|grep "inet addr"|egrep -v "127.0.0.1"|awk -F: '{print $2}'|awk '{print $1}'|head -1);
 
 # Copy over the sample dhcpd conf, backup the current one first.
 echo "Setting up dhcpd... ";
@@ -44,12 +46,12 @@ read -p "What is your network mask (ex: 255.255.255.0): " netmask;
 read -p "What is your gateway (ex: 192.168.0.1): " gateway;
 read -p "What is your domain name (ex: myhouse.com): " domain;
 read -p "Please enter your IP range (ex: 192.168.1.1 192.168.1.100): " range;
+read -p "Please enter your TFTP server IP (ex: 192.168.1.1): " next_server;
 # should we add nameservers?
-
 
 # If we got any blank responses back
 if [ -z $dhcp ];
-  then dhcp=192.168.1.1;
+  then dhcp=192.168.1.0;
 fi;
 
 if [ -z $netmask ];
@@ -65,7 +67,11 @@ if [ -z $domain ];
 fi; 
 
 if [ -z $range ];
-  then range="192.168.1.100 192.168.1.200";
+  then range="192.168.1.1 192.168.1.255";
+fi;
+
+if [ -z $next_server ];
+  then range="192.168.1.1 192.168.1.255";
 fi;
 
 # Backup any existing dhcpd configurations
@@ -81,7 +87,7 @@ fi;
 # Should work fine with existing networks, as dhcp will not lease out a used ip
 # Report bugs at https://github.com/RyanHartje/pxe4Centos/issues
 
-cat > /etc/dhcp/dhcpd.conf << "EOF"
+cat > /etc/dhcp/dhcpd.conf << EOF
 ddns-update-style interim;
 ignore client-updates;
 ddns-domainname "$domain.";
@@ -89,7 +95,7 @@ ddns-rev-domainname "in-addr.arpa.";
 allow booting;
 allow bootp;
 
-subnet 10.1.3.0 netmask 255.255.255.0 {
+subnet $dhcp netmask $netmask {
         option domain-name              "$domain";
         option routers                  $gateway;
         option subnet-mask              $netmask;
@@ -97,7 +103,7 @@ subnet 10.1.3.0 netmask 255.255.255.0 {
         range dynamic-bootp             $range;
         default-lease-time              10800;
         max-lease-time                  10800;
-      next-server ;
+      next-server $next_server;
       filename "pxelinux.0";
 }
 EOF
@@ -117,7 +123,6 @@ sed -ie "$(grep -n server_args /etc/xinetd.d/tftp|awk -F: '{print $1}')s|/var/li
 service xinetd restart;
 
 # Add a default menu 
-my_ip=$(ifconfig|grep "inet addr"|egrep -v "127.0.0.1"|awk -F: '{print $2}'|awk '{print $1}');
 cat > $tftp_dir\pxelinux.cfg/default << "EOF"
 default menu.c32
 prompt 0
@@ -140,6 +145,11 @@ service iptables save;
 # Setup chkconfig so that our services stay on
 chkconfig xinetd on;
 chkconfig dhcpd on;
+
+service xinetd restart;
+service dhcpd restart;
+
+tail -15 /var/log/messages;
 
 # Setup the default kickstart to automate installs (later)
 
