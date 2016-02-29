@@ -2,7 +2,7 @@
 # Author: Ryan Hartje
 # github.com/ryanhartje
 
-yum install -y syslinux xinetd dhcp tftp-serveri wget;
+yum install -y syslinux xinetd dhcp tftp-server wget;
 
 # Set these variables if you wish to change where your files reside (untested)
 # Please be sure to place your web root here
@@ -29,19 +29,19 @@ mkdir -v $tftp_dir\pxelinux.cfg;
 # Debian 7 Wheezy - http://ftp.utexas.edu/debian-cd/7.4.0/amd64/iso-cd/debian-7.4.0-amd64-kde-CD-1.iso 
 # Debian 8 Jessie - http://mirror.utexas.edu/debian/dists/jessie/main/installer-amd64/current/images/netboot/
 
-
-
 # Case example http://stackoverflow.com/questions/226703/how-do-i-prompt-for-input-in-a-linux-shell-script
 
 while true; do
   #read -p "Do you want a copy of Centos 6.5? [y/n] " input;
+  read -p "Do you want a copy of Centos 7? [y/n] " input;
   case $input in
-    #[Yy]* ) centos=1; cd $tftp_dir\images/centos; if [ ! -f $tftp_dir\images/centos/CentOS-6.5-x86_64-minimal.iso ]; then wget http://mirror.rackspace.com/CentOS/6.5/isos/x86_64/CentOS-6.5-x86_64-minimal.iso; fi; mkdir /tmp/mount; mount -o loop $tftp_dir\images/centos/CentOS-6.5-x86_64-minimal.iso /tmp/mount; cp -v /tmp/mount/images/pxeboot/{vmlinuz,initrd.img} $tftp_dir\images/centos/; echo "Centos Installed"; break;; # We will add sanity checking to ensure everything downloaded correctly in the future. 
-    [Yy]* ) centos=1; cd $tftp_dir\images/centos; if [ ! -f $tftp_dir\images/centos/isolinux ]; then wget http://mirror.utexas.edu/centos/7/os/x86_64/isolinux/vmlinuz; wget http://mirror.utexas.edu/centos/7/os/x86_64/isolinux/initrd.img; fi; break;; # We will add sanity checking to ensure everything downloaded correctly in the future. 
+    [Yy]* ) centos=1; cd $tftp_dir\images/centos; if [ ! -f $tftp_dir\images/centos/vmlinuz ]; then wget http://mirror.utexas.edu/centos/7/os/x86_64/isolinux/vmlinuz; wget http://mirror.utexas.edu/centos/7/os/x86_64/isolinux/initrd.img; fi; break;; # We will add sanity checking to ensure everything downloaded correctly in the future. 
     [Nn]* ) break;;
     * ) echo "Please enter either y or n";;
 esac;
 done;   
+
+    #[Yy]* ) centos=1; cd $tftp_dir\images/centos; if [ ! -f $tftp_dir\images/centos/CentOS-6.5-x86_64-minimal.iso ]; then wget http://mirror.rackspace.com/CentOS/6.5/isos/x86_64/CentOS-6.5-x86_64-minimal.iso; fi; mkdir /tmp/mount; mount -o loop $tftp_dir\images/centos/CentOS-6.5-x86_64-minimal.iso /tmp/mount; cp -v /tmp/mount/images/pxeboot/{vmlinuz,initrd.img} $tftp_dir\images/centos/; echo "Centos Installed"; break;; # We will add sanity checking to ensure everything downloaded correctly in the future. 
 
 my_ip=$(ifconfig|grep "inet addr"|egrep -v "127.0.0.1"|awk -F: '{print $2}'|awk '{print $1}'|head -1);
 
