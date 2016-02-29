@@ -149,6 +149,7 @@ EOF
 #  KERNEL images/centos/vmlinuz
 #  APPEND initrd=images/centos/initrd.img #ks=http://$my_ip/kickstart.cfg
 
+chown -R nobody. /var/lib/tftpboot
 
 # Be sure to open the firewall where necessary
 iptables -I INPUT -p udp --dport 69 -j ACCEPT
