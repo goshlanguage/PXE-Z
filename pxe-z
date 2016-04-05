@@ -1,0 +1,105 @@
+#!/usr/bin/env python
+"""
+PXE-Z - A tool to install and configure a PXE server, and add/remove images.
+https://github.com/ryanhartje/PXE-Z
+"""
+
+import argparse
+import subprocess
+import sys
+from platform import linux_disttribution
+
+def detect_os():
+    """
+    :return dist() - returns platform.dist() list [os, version, dist_name]
+    """
+    distro =  linux_distribution()
+    return distro
+
+
+def distro_valid():
+    supported = ['centos','debian','ubuntu','redhat']
+    if not dist or not distro in supported:
+        return False
+    return True
+
+def get_images():
+    """
+        {'id': , 'name': "", 'url': ''},
+    """
+    images = [
+        {'id': 1, 'name': "Centos 7", 
+         'url': ''}, 
+        {'id': 2, 'name': "Ubuntu 14.04", 
+         'url': ''},
+        {'id': 3, 'name': "Debian Jessie 8.4", 
+         'url': 'http://cdimage.debian.org/debian-cd/8.4.0/amd64/iso-cd/debian-8.4.0-amd64-netinst.iso'},
+        {'id': 4, 'name': "Kali Linux 2016.1", 
+         'url': 'http://cdimage.kali.org/kali-2016.1/kali-linux-2016.1-amd64.iso'}
+        ]
+
+
+def get_settings():
+    """
+    This function should detect the current NAT or Network, and provide them to the user
+        as defaults for network configuration
+    This function should also allow the user a mechanism of configuring:
+        * ISOs they want to setup
+        * Title for PXE screen,
+        * Background URL for PXE screen,
+        * Option to install nginx as HTTP server for Kickstart and Preseed scripts,
+    """
+    images = get_images()
+    print("\nPlease enter the number(s) corresponding to which images you want to use, separated "\
+          "by commas\n" \
+          "eg: 1, 5, 6\n\n" \
+          "Images\n" \
+          "------\n"
+    for image in get_images():
+          print("%s - %s" % image.id, image.name)
+    # input or raw_input here
+    return image[0]
+
+def rhel_install(settings):
+    """
+    """
+    print(settings)
+
+def debian_install(settings):
+    """
+    """
+    print(settings)
+
+
+
+def install():
+    """
+    This method invokes the appropriate script to install services based on if the underlying distro
+        is RHEL or Debian based.
+    """
+    distro = detect_os()[0]
+    settings = get_settings()
+    if distro in ["redhat", "centos"]:
+        rhel_install(settings)
+    elif distro in ["Ubuntu", "debian"]:
+        debian_install(settings)
+
+def config():
+    print("configuratin")
+
+def main():
+
+    print("EZ PZ")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='PXE-Z is a tool for installing and ' \
+                                     'configuring PXE servers.')
+    parser.add_argument('--install', action="store_true", default=False, help="Install PXE and dependencies")
+    parser.add_argument('--config', action="store_true", default=False, help="Configure PXE environment")
+    parser.add_argument('--network', action="store_true", default=False, help="Configure PXE Networking")
+    args = parser.parse_args()
+    if distro_valid():
+        main()
+    else:
+        sys.exit("Operating System Not Supported")
