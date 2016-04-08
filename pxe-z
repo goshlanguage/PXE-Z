@@ -16,7 +16,7 @@ def detect_os():
     :return dist() - returns platform.dist() list [os, version, dist_name]
     """
     distro =  linux_distribution()
-    return str(distro)
+    return distro[0].lower()
 
 
 def distro_valid():
