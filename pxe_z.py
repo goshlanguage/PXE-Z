@@ -34,8 +34,7 @@ def distro_valid():
 def get_banner():
     """
     """
-    banner = """
-          _      _   __
+    banner = """          _      _   __
          |_) \/ |_    /
          |   /\ |_   /_   v0.1
     """
@@ -107,6 +106,23 @@ def get_settings():
     return settings
 
 
+def get_default(settings):
+    default = """
+default menu.c32
+prompt 0
+timeout 300
+ONTIMEOUT local
+menu title ########## PXE Boot Menu ##########
+label 1
+menu label ^1) Install CentOS 7
+kernel centos7_x64/images/pxeboot/vmlinuz
+append initrd=centos7_x64/images/pxeboot/initrd.img method=http://192.168.1.150/centos7_x64 devfs=nomount
+label 2
+menu label ^2) Boot from local drive localboot
+    """
+    return default
+
+
 def rhel_install(settings):
     """
     Run yum and install our dependencies and services for running a PXE service
@@ -135,6 +151,24 @@ def debian_install(settings):
     print(settings)
 
 
+def update_tftp_conf():
+    """
+    sed replace disable yes with disable no to start tftp server with xinetd
+    """
+    try:
+        tftp_conf = None
+        with open('/etc/xinetd.d/tftp', 'r') as file:
+            tftp_conf = file.read()
+
+        tftp_conf = tftp_conf.replace('disable\t\t\t= yes', 'disable\t\t\t= no')
+
+        with open('/etc/xinetd.d/tftp', 'w') as file:
+            file.write(tftp_conf)
+        return True
+    except:
+        return False
+
+
 def install():
     """
     This method invokes the appropriate script to install services based on if the underlying distro
@@ -143,10 +177,39 @@ def install():
     distro = detect_os()
     settings = get_settings()
     print(settings)
+
+    print("Installing services and dependencies...")
     if distro in ["redhat", "centos"]:
         rhel_install(settings)
     elif distro in ["ubuntu", "debian"]:
         debian_install(settings)
+
+    print("Copying TFTP files")
+    # we use the binary itself because most RHEL systems alias cp to cp -i, meaning -f wont
+    #    force it to copy, resulting in failure if the files are already there.
+    cp_cmd = ["/bin/cp", "-f", "/usr/share/syslinux/pxelinux.0",
+           "/usr/share/syslinux/menu.c32",
+           "/usr/share/syslinux/memdisk",
+           "/usr/share/syslinux/mboot.c32",
+           "/usr/share/syslinux/chain.c32",
+           "/var/lib/tftpboot/"]
+    cp_process = subprocess.call(cp_cmd)
+    if cp_process != 0:
+        print " ".join(cp_cmd)
+        raise Exception("Could not copy syslinux files from /usr/share/syslinux/ to /var/lib/tftpboot.\n"
+                        "Please check that the folders exist, and that there files in /usr/share/syslinux")
+
+    print("Updating /etc/xinetd.d/tftp")
+    update_tftp_conf()
+
+    print("Creating /var/lib/tftpboot/pxelinux.cfg folder")
+    mkdir_cmd = ["mkdir", "-p", "/var/lib/tftpboot/pxelinux.cfg"]
+    subprocess.call(mkdir_cmd)
+
+    print("Creating /var/lib/tftpboot/pxelinux.cfg/default config")
+    with open('/var/lib/tftpboot/pxelinux.cfg/default', 'w+') as cfg:
+        cfg.write(get_default(settings))
+
 
 
 def config():
