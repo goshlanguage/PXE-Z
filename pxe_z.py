@@ -146,8 +146,14 @@ append initrd=centos7_x64/images/pxeboot/initrd.img method=http://%s/centos7_x64
 
 
 def get_dhcpd_conf(settings):
-    dhcpd_conf = None
-
+    dhcpd_conf = """allow booting;
+allow bootp;
+option option-128 code 128 = string;
+option option-129 code 129 = text;
+next-server %s;
+filename "pxelinux.0";
+    """ % settings['ip']
+    return dhcpd_conf
 
 
 def rhel_install(settings):
@@ -191,16 +197,27 @@ def setup_tftp():
 
         with open('/etc/xinetd.d/tftp', 'w') as file:
             file.write(tftp_conf)
-        subprocess.call("service xinetd enable; service xinetd start")
+        enable_cmd = "service xinetd enable".split()
+        start_cmd = "service xinetd start".split()
+        subprocess.call(enable_cmd)
+        subprocess.call(start_cmd)
         return True
     except:
         return False
 
 
-def setup_dhcp():
+def setup_dhcpd(settings):
     """
     """
+    dhcp_conf = get_dhcpd_conf(settings)
+    with open('/etc/dhcp/dhcpd.conf', 'w') as file:
+        file.write(dhcp_conf)
+    enable_cmd = "service dhcpd enable".split()
+    start_cmd = "service dhcpd start".split()
+    subprocess.call(enable_cmd)
+    subprocess.call(start_cmd)
 
+    return True
 
 
 def install():
@@ -236,7 +253,6 @@ def install():
     print("Setting up TFTP")
     setup_tftp()
 
-
     print("Creating /var/lib/tftpboot/pxelinux.cfg folder")
     mkdir_cmd = ["mkdir", "-p", "/var/lib/tftpboot/pxelinux.cfg"]
     subprocess.call(mkdir_cmd)
@@ -245,7 +261,8 @@ def install():
     with open('/var/lib/tftpboot/pxelinux.cfg/default', 'w+') as cfg:
         cfg.write(get_default(settings))
 
-
+    print("Configuring DHCPD")
+    setup_dhcpd(settings)
 
 
 def config():
