@@ -14,6 +14,16 @@ import isotool
 import network_helper
 
 
+def prompt(prompt):
+    # Raw input varies between Python 2 and 3
+    user_input = None
+    if sys.version_info > (3, 0):
+        user_input = input("Images: ")
+    else:
+        user_input = raw_input("Images: ")
+    return user_input
+
+
 def detect_os():
     """
     :return dist() - returns platform.dist() list [os, version, dist_name]
@@ -79,18 +89,25 @@ def get_user_image_selection():
     #   We will set images to empty if we have non valid text too.
     user_images = []
     while not user_images:
-        # Raw input varies between Python 2 and 3
-        if sys.version_info > (3, 0):
-            user_images = input("Images: ")
-        else:
-            user_images = raw_input("Images: ")
-
+        user_images = prompt("Images: ")
         if not user_images:
             print("Please select an image")
 
         user_images = user_images.split(',')
 
     return user_images
+
+
+def get_network_settings():
+    """
+    """
+    ifaces = network_helper.get_valid_interfaces()
+    suggested_ip = network_helper.get_private_ip(ifaces[0])
+    user_ip = prompt("Please enter IP [leave blank for: %s]: " % suggested_ip)
+    if not user_ip:
+        user_ip = suggested_ip
+
+    return user_ip
 
 
 def get_settings():
@@ -105,13 +122,13 @@ def get_settings():
     """
     image_list = get_user_image_selection()
 
-    title = read("Please enter your PXE boot title message: ")
-    settings = {'image_list': image_list, 'title': title}
+    title = prompt("Please enter your PXE boot title message: ")
+    network_settings = get_network_settings()
+    settings = {'image_list': image_list, 'title': title, 'ip': network_settings}
     return settings
 
 
 def get_default(settings):
-    title = settings['title']
     default = """
 default menu.c32
 prompt 0
@@ -123,9 +140,14 @@ menu label ^1) Boot from local drive localboot
 label 2
 menu label ^2) Install CentOS 7
 kernel centos7_x64/images/pxeboot/vmlinuz
-append initrd=centos7_x64/images/pxeboot/initrd.img method=http://192.168.1.150/centos7_x64 devfs=nomount
-    """ % (title)
+append initrd=centos7_x64/images/pxeboot/initrd.img method=http://%s/centos7_x64 devfs=nomount
+    """ % (settings['title'], settings['ip'])
     return default
+
+
+def get_dhcpd_conf(settings):
+    dhcpd_conf = None
+
 
 
 def rhel_install(settings):
@@ -133,7 +155,7 @@ def rhel_install(settings):
     Run yum and install our dependencies and services for running a PXE service
     :param settings - user selected settings
     """
-    install_cmd = ["yum", "install", "-y", "xinetd", "dhcpd", "tftp-server", "syslinux"]
+    install_cmd = ["yum", "install", "-y", "xinetd", "dhcp", "tftp-server", "syslinux"]
     install_process = subprocess.Popen(install_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = install_process.communicate()
     return_code = install_process.returncode
@@ -153,10 +175,10 @@ def debian_install(settings):
     :param settings:
     :return:
     """
-    print(settings)
+    return None
 
 
-def update_tftp_conf():
+def setup_tftp():
     """
     sed replace disable yes with disable no to start tftp server with xinetd
     """
@@ -169,9 +191,16 @@ def update_tftp_conf():
 
         with open('/etc/xinetd.d/tftp', 'w') as file:
             file.write(tftp_conf)
+        subprocess.call("service xinetd enable; service xinetd start")
         return True
     except:
         return False
+
+
+def setup_dhcp():
+    """
+    """
+
 
 
 def install():
@@ -204,8 +233,9 @@ def install():
         raise Exception("Could not copy syslinux files from /usr/share/syslinux/ to /var/lib/tftpboot.\n"
                         "Please check that the folders exist, and that there files in /usr/share/syslinux")
 
-    print("Updating /etc/xinetd.d/tftp")
-    update_tftp_conf()
+    print("Setting up TFTP")
+    setup_tftp()
+
 
     print("Creating /var/lib/tftpboot/pxelinux.cfg folder")
     mkdir_cmd = ["mkdir", "-p", "/var/lib/tftpboot/pxelinux.cfg"]
@@ -214,6 +244,7 @@ def install():
     print("Creating /var/lib/tftpboot/pxelinux.cfg/default config")
     with open('/var/lib/tftpboot/pxelinux.cfg/default', 'w+') as cfg:
         cfg.write(get_default(settings))
+
 
 
 
