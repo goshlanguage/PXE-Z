@@ -10,6 +10,9 @@ import subprocess
 import sys
 from platform import linux_distribution
 
+import isotool
+import network_helper
+
 
 def detect_os():
     """
@@ -102,24 +105,26 @@ def get_settings():
     """
     image_list = get_user_image_selection()
 
-    settings = {'image_list': image_list}
+    title = read("Please enter your PXE boot title message: ")
+    settings = {'image_list': image_list, 'title': title}
     return settings
 
 
 def get_default(settings):
+    title = settings['title']
     default = """
 default menu.c32
 prompt 0
 timeout 300
 ONTIMEOUT local
-menu title ########## PXE Boot Menu ##########
+menu title ########## %s ##########
 label 1
-menu label ^1) Install CentOS 7
+menu label ^1) Boot from local drive localboot
+label 2
+menu label ^2) Install CentOS 7
 kernel centos7_x64/images/pxeboot/vmlinuz
 append initrd=centos7_x64/images/pxeboot/initrd.img method=http://192.168.1.150/centos7_x64 devfs=nomount
-label 2
-menu label ^2) Boot from local drive localboot
-    """
+    """ % (title)
     return default
 
 
@@ -188,11 +193,11 @@ def install():
     # we use the binary itself because most RHEL systems alias cp to cp -i, meaning -f wont
     #    force it to copy, resulting in failure if the files are already there.
     cp_cmd = ["/bin/cp", "-f", "/usr/share/syslinux/pxelinux.0",
-           "/usr/share/syslinux/menu.c32",
-           "/usr/share/syslinux/memdisk",
-           "/usr/share/syslinux/mboot.c32",
-           "/usr/share/syslinux/chain.c32",
-           "/var/lib/tftpboot/"]
+               "/usr/share/syslinux/menu.c32",
+               "/usr/share/syslinux/memdisk",
+               "/usr/share/syslinux/mboot.c32",
+               "/usr/share/syslinux/chain.c32",
+               "/var/lib/tftpboot/"]
     cp_process = subprocess.call(cp_cmd)
     if cp_process != 0:
         print " ".join(cp_cmd)
@@ -215,6 +220,7 @@ def install():
 def config():
     """
     """
+
     print("configuratin")
 
 
