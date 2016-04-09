@@ -18,9 +18,9 @@ def prompt(prompt):
     # Raw input varies between Python 2 and 3
     user_input = None
     if sys.version_info > (3, 0):
-        user_input = input("Images: ")
+        user_input = input(prompt)
     else:
-        user_input = raw_input("Images: ")
+        user_input = raw_input(prompt)
     return user_input
 
 

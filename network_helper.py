@@ -12,7 +12,7 @@ def get_interfaces():
     """
     :return list of system's interfaces
     """
-    net_list = os.listdir('/sys/class/net/')
+    net_list = listdir('/sys/class/net/')
     try:
         net_list.remove('lo')
     except ValueError:
