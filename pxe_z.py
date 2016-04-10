@@ -108,7 +108,7 @@ def get_network_settings():
         user_ip = suggested_ip
 
     suggested_subnet = network_helper.get_subnet(ifaces[0])
-    user_netmask = prompt("Please enter subnet [leave blank for: %s]: " % suggested_subnet)
+    user_subnet = prompt("Please enter subnet [leave blank for: %s]: " % suggested_subnet)
     if not user_subnet:
         user_subnet = suggested_subnet
 
