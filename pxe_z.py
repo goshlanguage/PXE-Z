@@ -181,9 +181,9 @@ subnet %s netmask %s {
 next-server %s;
 filename "pxelinux.0";
     """ % (settings['network_id'],
-           settings['netmask'],
+           settings['subnet'],
            settings['first'],
-           settings['netmask'],
+           settings['subnet'],
            settings['first'],
            settings['last'],
            settings['ip']
@@ -298,13 +298,6 @@ def install():
 
     print("Configuring DHCPD")
     setup_dhcpd(settings)
-
-
-def config():
-    """
-    """
-
-    print("configuratin")
 
 
 def main():
