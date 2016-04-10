@@ -165,7 +165,7 @@ def get_dhcpd_conf(settings):
 allow bootp;
 option option-128 code 128 = string;
 option option-129 code 129 = text;
-default-least-time 600;
+default-lease-time 600;
 max-lease-time 7200;
 authoritative;
 log-facility local7;
