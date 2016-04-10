@@ -107,7 +107,14 @@ def get_network_settings():
     if not user_ip:
         user_ip = suggested_ip
 
-    return user_ip
+    suggested_subnet = network_helper.get_subnet(ifaces[0])
+    user_netmask = prompt("Please enter subnet [leave blank for: %s]: " % suggested_subnet)
+    if not user_subnet:
+        user_subnet = suggested_subnet
+
+    network_id = network_helper.get_network_id(user_ip, user_subnet)
+
+    return user_ip, user_subnet, network_id
 
 
 def get_settings():
@@ -123,8 +130,16 @@ def get_settings():
     image_list = get_user_image_selection()
 
     title = prompt("Please enter your PXE boot title message: ")
-    network_settings = get_network_settings()
-    settings = {'image_list': image_list, 'title': title, 'ip': network_settings}
+    ip, subnet, network_id = get_network_settings()
+    first, last = network_helper.get_network_range(ip, subnet)
+    settings = {'image_list': image_list,
+                'title': title,
+                'ip': ip,
+                'subnet': subnet,
+                'network_id': network_id,
+                'first': first,
+                'last': last
+                }
     return settings
 
 
@@ -150,9 +165,29 @@ def get_dhcpd_conf(settings):
 allow bootp;
 option option-128 code 128 = string;
 option option-129 code 129 = text;
+default-least-time 600;
+max-lease-time 7200;
+authoritative;
+log-facility local7;
+
+subnet %s netmask %s {
+        option routers                  %s;
+        option subnet-mask              %s;
+        option domain-name-servers      8.8.8.8, 8.8.4.4;
+        option time-offset              -18000;     # Eastern Standard Time
+	range   %s   %s;
+}
+
 next-server %s;
 filename "pxelinux.0";
-    """ % settings['ip']
+    """ % (settings['network_id'],
+           settings['netmask'],
+           settings['first'],
+           settings['netmask'],
+           settings['first'],
+           settings['last'],
+           settings['ip']
+           )
     return dhcpd_conf
 
 
