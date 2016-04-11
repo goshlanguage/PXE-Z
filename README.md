@@ -2,19 +2,52 @@
 
 A python project that aims to quickly and easily setup PXE on RHEL and Debian systems.
 
-
-Current RoadMap - Getting to 1.0:
+Vagrant
 ====
-What's left? All of it!
 
-- finish dhcp and tftp services install for RHEL and Debian
+This project includes a Vagrant file, for ease of use/development.
+To get started, simply run vagrant up and ssh in:
+
+```sh
+git clone https://github.com/ryanhartje/pxe-z
+cd pxe-z
+vagrant up pxe
+vagrant ssh pxe
+```
+
+Once you are in the VM, escalate to root and run pxe_z.py:
+
+```sh
+sudo bash
+cd pxe-z
+./pxe_z.py
+```
+
+If the python version is broken, there is the bash fallback:
+
+```ssh
+sudo bash
+cd pxe-z
+./install.sh
+```
+
+This will get you started, you can use the defaults to get setup.
+
+
+Features in 0.2:
+====
+What's left? 
+
+- finish dhcp and tftp services install Debian
 - finish configurations wizard that:
-- detects NAT or network and allows user to configure otherwise
-- allows users to select images for PXE and sets them up
-- allows users to configure Title Text for PXE
-- allows users to give URL to background for PXE
-- add nginx installer for automation scripts
-- allow users to select automation scripts
+- allows users to select images for PXE w/ given URL for background
 - Finish vagrant and upload to Hashicorp for ease of testing/development
 
 
+Backlog
+====
+- setup in a container
+- create unittests
+- setup jenkins job
+- add nginx installer for automation scripts
+- allow users to select automation scripts

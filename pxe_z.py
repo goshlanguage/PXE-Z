@@ -233,12 +233,18 @@ def setup_tftp():
         with open('/etc/xinetd.d/tftp', 'w') as file:
             file.write(tftp_conf)
         enable_cmd = "service xinetd enable".split()
-        start_cmd = "service xinetd start".split()
         subprocess.call(enable_cmd)
-        subprocess.call(start_cmd)
         return True
     except:
         return False
+
+
+def setup_iptables():
+    """
+    Setup the necessary rules for iptables
+    """
+    tftp_process = "iptables -I INPUT -p udp --dport 69 -j ACCEPT".split()
+    subprocess.call(tftp_process)
 
 
 def setup_dhcpd(settings):
@@ -295,6 +301,14 @@ def install():
     print("Creating /var/lib/tftpboot/pxelinux.cfg/default config")
     with open('/var/lib/tftpboot/pxelinux.cfg/default', 'w+') as cfg:
         cfg.write(get_default(settings))
+
+    print("Setting ownership on /var/lib/tftpboot")
+    chown_process = "chown -R nobody. /var/lib/tftpboot".split()
+    subprocess.call(chown_process)
+
+    print("Starting TFTP")
+    start_cmd = "service xinetd start".split()
+    subprocess.call(start_cmd)
 
     print("Configuring DHCPD")
     setup_dhcpd(settings)
