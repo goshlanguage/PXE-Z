@@ -69,9 +69,26 @@ def get_images():
          'url': 'http://cdimage.debian.org/debian-cd/8.4.0/amd64/iso-cd/'
                 'debian-8.4.0-amd64-netinst.iso'},
         {'id': 4, 'name': 'Kali Linux 2016.1', 'type': 'iso',
-         'url': 'http://cdimage.kali.org/kali-2016.1/kali-linux-2016.1-amd64.iso'}
+         'url': 'http://cdimage.kali.org/kali-2016.1/kali-linux-2016.1-amd64.iso'},
+        {'id': 5, 'name': 'Gparted', 'type': 'iso',
+         'url': 'http://downloads.sourceforge.net/gparted/gparted-live-0.25.0-3-i686.iso'}
         ]
     return images
+
+
+def get_image_url(id):
+    images = get_images()
+    for image in images:
+        if image['id'] == id:
+            return image['url']
+    return None
+
+def get_image_name(id):
+    images = get_images()
+    for image in images:
+        if image['id'] == id:
+            return image['name']
+    return None
 
 
 def get_user_image_selection():
@@ -152,11 +169,18 @@ ONTIMEOUT local
 menu title ########## %s ##########
 label 1
 menu label ^1) Boot from local drive localboot
-label 2
-menu label ^2) Install CentOS 7
-kernel centos7_x64/images/pxeboot/vmlinuz
-append initrd=centos7_x64/images/pxeboot/initrd.img method=http://%s/centos7_x64 devfs=nomount
-    """ % (settings['title'], settings['ip'])
+    """ % (settings['title'])
+    count = 2
+    for id in settings['image_list']:
+        name = get_image_name(int(id))
+        path_name = isotool.get_iso_name(get_image_url(int(id)))
+        entry = """label %s
+menu label ^%s) %s
+kernel images/%s/vmlinuz
+append initrd=images/%s/initrd.img
+""" % (count, count, name, path_name, path_name)
+        count=count+1
+        default = default + entry
     return default
 
 
@@ -247,13 +271,20 @@ def setup_iptables():
     subprocess.call(tftp_process)
 
 
+def download_images(settings):
+    user_images = settings['image_list']
+    for id in user_images:
+        url = get_image_url(int(id))
+        isotool.setup(url)
+
+
 def setup_dhcpd(settings):
     """
     """
     dhcp_conf = get_dhcpd_conf(settings)
     with open('/etc/dhcp/dhcpd.conf', 'w') as file:
         file.write(dhcp_conf)
-    enable_cmd = "service dhcpd enable".split()
+    enable_cmd = "chkconfig dhcpd on".split()
     start_cmd = "service dhcpd start".split()
     subprocess.call(enable_cmd)
     subprocess.call(start_cmd)
@@ -297,6 +328,9 @@ def install():
     print("Creating /var/lib/tftpboot/pxelinux.cfg folder")
     mkdir_cmd = ["mkdir", "-p", "/var/lib/tftpboot/pxelinux.cfg"]
     subprocess.call(mkdir_cmd)
+
+    print("Downloading Images")
+    download_images(settings)
 
     print("Creating /var/lib/tftpboot/pxelinux.cfg/default config")
     with open('/var/lib/tftpboot/pxelinux.cfg/default', 'w+') as cfg:
