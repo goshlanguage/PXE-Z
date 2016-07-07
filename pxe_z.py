@@ -38,7 +38,7 @@ def distro_valid():
     """
     distro = detect_os()
     LOG.debug("Operating System Detected: %s", distro)
-    supported = ['centos', 'debian', 'ubuntu', 'redhat']
+    supported = ['centos', 'centos linux', 'debian', 'ubuntu', 'redhat']
     if not distro or distro not in supported:
         raise Exception("Operating System not supported")
     return True
@@ -305,7 +305,7 @@ def install():
     print(settings)
 
     print("Installing services and dependencies...")
-    if distro in ["redhat", "centos"]:
+    if distro in ["redhat", "centos", "centos linux"]:
         rhel_install(settings)
     elif distro in ["ubuntu", "debian"]:
         debian_install(settings)
