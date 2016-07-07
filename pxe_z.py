@@ -71,8 +71,10 @@ def get_images():
         {'id': 4, 'name': 'Kali Linux 2016.1', 'type': 'iso',
          'url': 'http://cdimage.kali.org/kali-2016.1/kali-linux-2016.1-amd64.iso'},
         {'id': 5, 'name': 'Gparted', 'type': 'iso',
-         'url': 'http://downloads.sourceforge.net/gparted/gparted-live-0.25.0-3-i686.iso'}
-        ]
+         'url': 'http://downloads.sourceforge.net/gparted/gparted-live-0.25.0-3-i686.iso'},
+        {'id': 6, 'name': 'CoreOS', 'type': 'iso',
+         'url': 'https://stable.release.core-os.net/amd64-usr/current/coreos_production_iso_image.iso'}
+    ]
     return images
 
 
@@ -82,6 +84,7 @@ def get_image_url(id):
         if image['id'] == id:
             return image['url']
     return None
+
 
 def get_image_name(id):
     images = get_images()
@@ -179,7 +182,7 @@ menu label ^%s) %s
 kernel images/%s/vmlinuz
 append initrd=images/%s/initrd.img
 """ % (count, count, name, path_name, path_name)
-        count=count+1
+        count = count + 1
         default = default + entry
     return default
 
@@ -311,11 +314,11 @@ def install():
     # we use the binary itself because most RHEL systems alias cp to cp -i, meaning -f wont
     #    force it to copy, resulting in failure if the files are already there.
     cp_cmd = ["/bin/cp", "-f", "/usr/share/syslinux/pxelinux.0",
-               "/usr/share/syslinux/menu.c32",
-               "/usr/share/syslinux/memdisk",
-               "/usr/share/syslinux/mboot.c32",
-               "/usr/share/syslinux/chain.c32",
-               "/var/lib/tftpboot/"]
+              "/usr/share/syslinux/menu.c32",
+              "/usr/share/syslinux/memdisk",
+              "/usr/share/syslinux/mboot.c32",
+              "/usr/share/syslinux/chain.c32",
+              "/var/lib/tftpboot/"]
     cp_process = subprocess.call(cp_cmd)
     if cp_process != 0:
         print " ".join(cp_cmd)
@@ -361,8 +364,8 @@ if __name__ == "__main__":
     logging.basicConfig(filename="./pxe-z.log", level=logging.INFO)
     LOG = logging.getLogger(__name__)
 
-    PARSER = argparse.ArgumentParser(description='PXE-Z is a tool for installing and '\
-                                     'configuring PXE servers.')
+    PARSER = argparse.ArgumentParser(description='PXE-Z is a tool for installing and '
+                                                 'configuring PXE servers.')
     PARSER.add_argument('install',
                         action="store_true",
                         default=False,
