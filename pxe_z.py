@@ -301,7 +301,7 @@ def downloads(settings):
     for id in user_images:
         url = get_image_url(int(id))
         isotool.setup(url)
-        if hasattr(images[id], "extra_files"):
+        if hasattr(images[int(id)], "extra_files"):
             isotool.get_extra_files(
                 images[id]['name'],
                 images[id]['extra_files']
