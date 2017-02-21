@@ -189,7 +189,7 @@ menu label ^1) Boot from local drive localboot
     initrd images/%s/coreos_production_pxe_image.cpio.gz
     append coreos.config.url=http://%s/pxe-config.ign
     """ % (count, count, name, path_name, path_name,
-                ip, network_helper.get_public_ip())
+                         network_helper.get_public_ip())
             default = default + entry
         else:
             entry = """label %s
@@ -238,6 +238,8 @@ def rhel_install(settings):
     Run yum and install our dependencies and services for running a PXE service
     :param settings - user selected settings
     """
+    update_cache = "yum update".split()
+    add_epel_repo = "yum install -y epel-release".split()
     install_cmd = [
         "yum", "install", "-y",
         "xinetd",
@@ -246,16 +248,22 @@ def rhel_install(settings):
         "tftp-server",
         "syslinux"
     ]
-    install_process = subprocess.Popen(install_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    epel_process = subprocess.Popen(
+                                        add_epel_repo,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE
+    )
+    install_process = subprocess.Popen(
+                                        install_cmd,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE
+    )
+    subprocess.call(update_cache)
+    epel_process.communicate()
+    subprocess.call(update_cache)
     out, err = install_process.communicate()
-    return_code = install_process.returncode
 
     LOG.info("Package installation for RHEL:\n%s", out)
-
-    if return_code != 0:
-        LOG.fatal("FATAL - pacakges failed to install\n------\n%s", err)
-        raise Exception("Failed to install packages:\n %s" % err)
-
     return True
 
 
@@ -299,12 +307,13 @@ def downloads(settings):
     images = get_images()
 
     for id in user_images:
+        index = int(id)-1
         url = get_image_url(int(id))
         isotool.setup(url)
-        if hasattr(images[int(id)], "extra_files"):
+        if hasattr(images[index], "extra_files"):
             isotool.get_extra_files(
-                images[id]['name'],
-                images[id]['extra_files']
+                images[index]['name'],
+                images[index]['extra_files']
             )
 
 def setup_dhcpd(settings):
@@ -383,7 +392,7 @@ def install():
     setup_dhcpd(settings)
 
     print("Starting Nginx")
-    setup_nginx(settings)
+    setup_nginx()
 
 def main():
     """
