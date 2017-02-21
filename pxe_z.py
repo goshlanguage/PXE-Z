@@ -73,7 +73,12 @@ def get_images():
         {'id': 5, 'name': 'Gparted', 'type': 'iso',
          'url': 'http://downloads.sourceforge.net/gparted/gparted-live-0.25.0-3-i686.iso'},
         {'id': 6, 'name': 'CoreOS', 'type': 'iso',
-         'url': 'https://stable.release.core-os.net/amd64-usr/current/coreos_production_iso_image.iso'}
+         'url': 'https://stable.release.core-os.net/amd64-usr/current/coreos_production_iso_image.iso',
+         'extra_files': [
+            'http://stable.release.core-os.net/amd64-usr/current/coreos_production_pxe_image.cpio.gz',
+            'http://stable.release.core-os.net/amd64-usr/current/coreos_production_pxe_image.cpio.gz.sig'
+         ]
+        }
     ]
     return images
 
@@ -177,13 +182,23 @@ menu label ^1) Boot from local drive localboot
     for id in settings['image_list']:
         name = get_image_name(int(id))
         path_name = isotool.get_iso_name(get_image_url(int(id)))
-        entry = """label %s
-menu label ^%s) %s
-kernel images/%s/vmlinuz
-append initrd=images/%s/initrd.img
-""" % (count, count, name, path_name, path_name)
-        count = count + 1
-        default = default + entry
+        if name == "CoreOS":
+            entry = """label %s
+    menu label ^%s) %s
+    kernel images/%s/vmlinuz
+    initrd images/%s/coreos_production_pxe_image.cpio.gz
+    append coreos.config.url=http://%s/pxe-config.ign
+    """ % (count, count, name, path_name, path_name,
+                ip, network_helper.get_public_ip())
+            default = default + entry
+        else:
+            entry = """label %s
+    menu label ^%s) %s
+    kernel images/%s/vmlinuz
+    append initrd=images/%s/initrd.img
+    """ % (count, count, name, path_name, path_name)
+            default = default + entry
+    count = count + 1
     return default
 
 
@@ -223,7 +238,14 @@ def rhel_install(settings):
     Run yum and install our dependencies and services for running a PXE service
     :param settings - user selected settings
     """
-    install_cmd = ["yum", "install", "-y", "xinetd", "dhcp", "tftp-server", "syslinux"]
+    install_cmd = [
+        "yum", "install", "-y",
+        "xinetd",
+        "dhcp",
+        "nginx",
+        "tftp-server",
+        "syslinux"
+    ]
     install_process = subprocess.Popen(install_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = install_process.communicate()
     return_code = install_process.returncode
@@ -265,7 +287,6 @@ def setup_tftp():
     except:
         return False
 
-
 def setup_iptables():
     """
     Setup the necessary rules for iptables
@@ -273,13 +294,18 @@ def setup_iptables():
     tftp_process = "iptables -I INPUT -p udp --dport 69 -j ACCEPT".split()
     subprocess.call(tftp_process)
 
-
-def download_images(settings):
+def downloads(settings):
     user_images = settings['image_list']
+    images = get_images()
+
     for id in user_images:
         url = get_image_url(int(id))
         isotool.setup(url)
-
+        if hasattr(images[id], "extra_files"):
+            isotool.get_extra_files(
+                images[id]['name'],
+                images[id]['extra_files']
+            )
 
 def setup_dhcpd(settings):
     """
@@ -294,6 +320,11 @@ def setup_dhcpd(settings):
 
     return True
 
+def setup_nginx():
+    enable_cmd = "chkconfig nginx on".split()
+    start_cmd =  "service nginx start".split()
+    subprocess.call(enable_cmd)
+    subprocess.call(start_cmd)
 
 def install():
     """
@@ -332,8 +363,9 @@ def install():
     mkdir_cmd = ["mkdir", "-p", "/var/lib/tftpboot/pxelinux.cfg"]
     subprocess.call(mkdir_cmd)
 
-    print("Downloading Images")
-    download_images(settings)
+    print("Downloading Images and other files.")
+    downloads(settings)
+
 
     print("Creating /var/lib/tftpboot/pxelinux.cfg/default config")
     with open('/var/lib/tftpboot/pxelinux.cfg/default', 'w+') as cfg:
@@ -350,6 +382,8 @@ def install():
     print("Configuring DHCPD")
     setup_dhcpd(settings)
 
+    print("Starting Nginx")
+    setup_nginx(settings)
 
 def main():
     """

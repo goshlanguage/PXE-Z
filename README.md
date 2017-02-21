@@ -36,7 +36,7 @@ This will get you started, you can use the defaults to get setup.
 
 Features in 0.2:
 ====
-What's left? 
+What's left?
 
 - finish dhcp and tftp services install Debian
 - finish configurations wizard that:
@@ -48,6 +48,9 @@ Backlog
 ====
 - setup in a container
 - create unittests
-- setup jenkins job
+- setup gitlab ci job
 - add nginx installer for automation scripts
 - allow users to select automation scripts
+- Undo sloppy Popens instead of python libraries
+- Support Debian
+- GPG check all images
