@@ -1,6 +1,6 @@
 # PXE-Z
 
-A python project that aims to quickly and easily setup PXE on RHEL and Debian systems.
+A python project that aims to quickly and easily setup PXE on RHEL and Debian systems. If you are developing or running this from Mac or Windows, be sure to first install `vagrant`, and a viable hypervisor tool such as `Virtual Box` so that you can follow the directions below.
 
 Vagrant
 ====
