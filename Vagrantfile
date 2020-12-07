@@ -4,10 +4,10 @@
 #    https://github.com/ryanhartje/pxe-z
 
 $script = <<SCRIPT
-# download required packages
+
 yum update
 yum install -y git vim 
-# download pxe-z 
+
 git clone https://github.com/ryanhartje/pxe-z
 SCRIPT
 

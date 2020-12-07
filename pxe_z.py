@@ -65,9 +65,9 @@ def get_images():
         {'id': 2, 'name': 'Ubuntu 14.04', 'type': 'tar',
          'url': 'http://archive.ubuntu.com/ubuntu/dists/trusty-updates/main/installer-amd64/'
                 'current/images/netboot/netboot.tar.gz'},
-        {'id': 3, 'name': 'Debian Jessie 8.4', 'type': 'iso',
-         'url': 'http://cdimage.debian.org/debian-cd/8.4.0/amd64/iso-cd/'
-                'debian-8.4.0-amd64-netinst.iso'},
+        {'id': 3, 'name': 'Debian Jessie 10.7 [amd64]', 'type': 'iso',
+         'url': 'http://cdimage.debian.org/debian-cd/10.7.0/amd64/iso-cd/'
+                'debian-10.7.0-amd64-netinst.iso'},
         {'id': 4, 'name': 'Kali Linux 2016.1', 'type': 'iso',
          'url': 'http://cdimage.kali.org/kali-2016.1/kali-linux-2016.1-amd64.iso'},
         {'id': 5, 'name': 'Gparted', 'type': 'iso',
